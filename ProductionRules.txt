@@ -1,0 +1,47 @@
+Program       -> Items
+Items         -> Item Items | e
+Item          -> TYPE ID DeclTail | AssignStmt | IF | WHILE | ReturnStmt | Block
+DeclTail      -> ( Params ) Block | Init VarsTail ;
+
+Params        -> Param ParamsTail | e
+ParamsTail    -> , Param ParamsTail | e
+Param         -> TYPE ID
+
+Block         -> { Stmts }
+Stmts         -> Stmt Stmts | e
+Stmt          -> DeclStmt | AssignStmt | IF | WHILE | ReturnStmt | Block
+
+DeclStmt      -> TYPE ID Init VarsTail ;
+VarsTail      -> , ID Init VarsTail | e
+Init          -> = Expr | e
+
+AssignStmt    -> ID AssignTail ;
+AssignTail    -> = Expr | ( Args )
+
+IF            -> if ( Expr ) Block ELSE
+ELSE          -> else ElseTail | e
+ElseTail      -> Block | IF
+WHILE         -> while ( Expr ) Block
+
+ReturnStmt    -> return ReturnTail
+ReturnTail    -> Expr ; | ;
+
+Args          -> Expr ArgsTail | e
+ArgsTail      -> , Expr ArgsTail | e
+
+Expr          -> AndExpr OrTail
+OrTail        -> || AndExpr OrTail | e
+AndExpr       -> RelExpr AndTail
+AndTail       -> && RelExpr AndTail | e
+RelExpr       -> AddExpr RelTail
+RelTail       -> RelOp AddExpr | e
+RelOp         -> == | != | < | > | <= | >=
+
+AddExpr       -> MulExpr AddTail
+AddTail       -> + MulExpr AddTail | - MulExpr AddTail | e
+MulExpr       -> Unary MulTail
+MulTail       -> * Unary MulTail | / Unary MulTail | % Unary MulTail | e
+
+Unary         -> ! Unary | - Unary | Primary
+Primary       -> ID IdTail | NUM | CHR | ( Expr )
+IdTail        -> ( Args ) | e

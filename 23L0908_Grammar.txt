@@ -1,0 +1,210 @@
+1. Terminals
+
+The lexer from Assignment 1 (23L0908_Lexical.cpp) produces tokens in categories. Before parsing,
+each token is mapped to a grammar terminal:
+
+| Lexer category | Grammar terminal | Example lexemes |
+|---|---|---|
+| DATATYPE | TYPE | int, char |
+| IDENTIFIER | ID | index, sum, c1 |
+| INT_LITERAL | NUM | 0, 17 |
+| CHAR_LITERAL | CHR | 'a' |
+| KEYWORD | the keyword itself | if, else, while, return |
+| OPERATOR | the operator itself | =, +, -, *, /, %, !, ==, !=, <, >, <=, >=, &&, \|\| |
+| PUNCTUATION | the symbol itself | ;, ,, (, ), {, } |
+
+$ is the end-of-input marker. Lexer ERROR tokens are reported by the parser as unknown tokens.
+
+2. The Grammar
+
+Start symbol: Program. ε is the empty string.
+
+
+Program       -> ExtDeclList
+ExtDeclList   -> ExtDecl ExtDeclList | ε
+ExtDecl       -> TYPE ID ExtDeclTail
+ExtDeclTail   -> ( ParamList ) Block | InitOpt VarListTail ;
+ParamList     -> Param ParamListTail | ε
+ParamListTail -> , Param ParamListTail | ε
+Param         -> TYPE ID
+
+Block         -> { StmtList }
+StmtList      -> Stmt StmtList | ε
+Stmt          -> DeclStmt | IdStmt | IfStmt | WhileStmt | ReturnStmt | Block
+
+DeclStmt      -> TYPE ID InitOpt VarListTail ;
+VarListTail   -> , ID InitOpt VarListTail | ε
+InitOpt       -> = Expr | ε
+
+IdStmt        -> ID IdStmtTail ;
+IdStmtTail    -> = Expr | ( ArgList )
+
+IfStmt        -> if ( Expr ) Block ElsePart
+ElsePart      -> else ElseTail | ε
+ElseTail      -> Block | IfStmt
+WhileStmt     -> while ( Expr ) Block
+ReturnStmt    -> return ReturnTail
+ReturnTail    -> Expr ; | ;
+
+ArgList       -> Expr ArgListTail | ε
+ArgListTail   -> , Expr ArgListTail | ε
+
+Expr          -> AndExpr OrTail
+OrTail        -> || AndExpr OrTail | ε
+AndExpr       -> RelExpr AndTail
+AndTail       -> && RelExpr AndTail | ε
+RelExpr       -> AddExpr RelTail
+RelTail       -> RelOp AddExpr | ε
+RelOp         -> == | != | < | > | <= | >=
+AddExpr       -> MulExpr AddTail
+AddTail       -> + MulExpr AddTail | - MulExpr AddTail | ε
+MulExpr       -> Unary MulTail
+MulTail       -> * Unary MulTail | / Unary MulTail | % Unary MulTail | ε
+Unary         -> ! Unary | - Unary | Primary
+Primary       -> ID IdTail | NUM | CHR | ( Expr )
+IdTail        -> ( ArgList ) | ε
+
+
+How each required statement is covered
+
+| Statement | Example | Rules used |
+|---|---|---|
+| Declaration | int index; char c1, c2; | DeclStmt, VarListTail, InitOpt (also ExtDeclTail at global level) |
+| Assignment | index = index + 1; | IdStmt → ID IdStmtTail ; with IdStmtTail → = Expr |
+| Selection | if (...) {...} else {...} | IfStmt, ElsePart, ElseTail (also allows else if) |
+| Iteration | while (...) {...} | WhileStmt |
+| Function definition | int sum(int a, int b){ return a + b; } | ExtDeclTail → ( ParamList ) Block, ReturnStmt |
+| Function call | index = sum(index, 1); or print(x); | Primary → ID IdTail with IdTail → ( ArgList ), or IdStmtTail → ( ArgList ) |
+| Nesting | blocks inside if / while | Stmt → ... \| Block, and Block → { StmtList } |
+
+3. Design Decisions
+
+A grammar has to meet three conditions before a predictive top-down parser can use it: it must be
+unambiguous, have no left recursion, and be left-factored. Each subsection below shows how this grammar meets them.
+
+3.1 Left recursion removed
+
+The natural way to write a binary operator is left-recursive:
+
+
+AddExpr -> AddExpr + MulExpr | MulExpr
+
+
+A top-down parser cannot use this rule. To expand AddExpr, it would immediately have to expand
+AddExpr again without consuming any input, so it would loop forever. The standard transformation
+A → A α | β becomes A → β A' and A' → α A' | ε:
+
+
+AddExpr -> MulExpr AddTail
+AddTail -> + MulExpr AddTail | - MulExpr AddTail | ε
+
+
+The same transformation was applied at each binary-operator level:
+
+| Level | Was | Became |
+|---|---|---|
+| \|\| | Expr → Expr \|\| AndExpr \| AndExpr | Expr → AndExpr OrTail |
+| && | AndExpr → AndExpr && RelExpr \| RelExpr | AndExpr → RelExpr AndTail |
+| + - | AddExpr → AddExpr + MulExpr \| ... | AddExpr → MulExpr AddTail |
+| * / % | MulExpr → MulExpr * Unary \| ... | MulExpr → Unary MulTail |
+
+The list rules (ExtDeclList, StmtList, ParamListTail, VarListTail, ArgListTail) were
+written right-recursive from the start, so they never had left recursion.
+
+3.2 Precedence and associativity
+
+Precedence comes from the nesting of the non-terminals. Each level is built from the level below
+it, so the lower the level, the tighter its operators bind:
+
+| Precedence | Operators | Non-terminal |
+|---|---|---|
+| 1 (lowest) | \|\| | Expr / OrTail |
+| 2 | && | AndExpr / AndTail |
+| 3 | == != < > <= >= | RelExpr / RelTail |
+| 4 | + - | AddExpr / AddTail |
+| 5 | * / % | MulExpr / MulTail |
+| 6 | unary ! - | Unary |
+| 7 (highest) | identifiers, literals, calls, ( Expr ) | Primary |
+
+For a + b * c, the parser must finish building a complete MulExpr (b * c) before AddTail
+can continue. As a result, * ends up lower in the parse tree than +, so it is evaluated first.
+Parentheses go back up to Expr through Primary → ( Expr ), which overrides precedence.
+
+This layered grammar is also what makes the expressions unambiguous. The simple version
+E → E + E | E * E | ... gives two parse trees for a + b * c.
+
+Because each ...Tail rule repeats, operators at the same level can be chained, as in
+a - b - c or x && y && z. RelTail → RelOp AddExpr | ε does not repeat, so only one
+comparison is allowed per level. a < b == c is therefore a syntax error, but (a < b) == c
+is accepted. This was a deliberate choice: chained comparisons are almost always a mistake in C.
+
+3.3 Left factoring
+
+If two alternatives of the same rule start with the same symbols, one token of lookahead cannot
+decide between them. The common prefix is therefore moved out, and the rest becomes a "tail"
+non-terminal (A → α β1 | α β2 becomes A → α A' and A' → β1 | β2).
+
+ExtDeclTail. At the top level, a global variable and a function definition both start with
+TYPE ID:
+
+
+int count;                 TYPE ID ;
+int count = 0, total;      TYPE ID = ...
+int sum(int a, int b){..}  TYPE ID ( ...
+
+
+Without factoring, the parser would have to choose between "variable" and "function" while it is
+looking at TYPE, which it cannot do. After factoring, ExtDecl → TYPE ID ExtDeclTail reads the
+shared prefix first, and ExtDeclTail decides from the third token: ( means a function,
+and =, , or ; mean a variable.
+
+IdStmtTail. Inside a function, an assignment and a function-call statement both start with
+ID:
+
+
+index = index + 1;         ID = ...
+print(index);              ID ( ...
+
+
+IdStmt → ID IdStmtTail ; reads the identifier first, and IdStmtTail chooses on = or (.
+
+The same idea is used in other places:
+- Primary → ID IdTail distinguishes a plain variable x from a call f(x) inside an expression.
+- ElsePart → else ElseTail with ElseTail → Block | IfStmt handles both else {...} and else if.
+- ReturnTail → Expr ; | ; handles return x; and return;.
+
+3.4 No dangling else
+
+The textbook grammar S → if E then S | if E then S else S is ambiguous: in
+if E1 then if E2 then S1 else S2, the else could belong to either if.
+In this grammar the body of an if or else is always a Block ({ ... }), so every else
+can belong to only one if. No matched_stmt / open_stmt rewrite is needed, and the parse
+table has no conflict on else.
+
+4. FIRST / FOLLOW Sets and LL(1) Check
+
+The parser computes these automatically from ProductionRules.txt using the FIRST and
+FOLLOW rules. The full results are written to ParseTable.txt, with every non-terminal's FIRST
+and FOLLOW set followed by all 178 filled cells of the parse table M[A, a].
+
+Some sets that show why the decisions above work:
+
+| Non-terminal | FIRST | FOLLOW |
+|---|---|---|
+| ExtDeclTail | ( ; , = | TYPE $ |
+| IdStmtTail | ( = | ; |
+| Stmt | TYPE ID { if while return | TYPE ID { } if while return |
+| ElsePart | else ε | TYPE ID { } if while return |
+| Expr | ID ( - ! NUM CHR | ) ; , |
+| AddTail | + - ε | ) ; , \|\| && == != < > <= >= |
+| MulTail | * / % ε | ) ; , \|\| && == != < > <= >= + - |
+
+- Stmt: the six alternatives start with six different tokens (TYPE, ID, if, while,
+  return, {), so one token always selects the right statement rule.
+- ElsePart: else is not in FOLLOW(ElsePart), so the else rule and the ε rule never compete.
+- MulTail: + and - are in FOLLOW(MulTail), so on a * b + c the parser takes
+  MulTail → ε when it reaches + and hands control back to AddTail.
+
+LL(1) check: while building the table, the parser checks every cell and prints
+LL(1) conflict at M[A, a] if two productions would go into the same cell. This grammar produces
+no conflicts, so it is LL(1).

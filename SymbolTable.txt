@@ -1,0 +1,17 @@
+Scope: file
+  pick : func, int (int, int, int), line 1
+  main : func, int (), line 5
+  Scope: pick
+    a : param, int, line 1
+    b : param, int, line 1
+    c : param, int, line 1
+    t1 : temp, int
+    t2 : temp, int
+    t3 : temp, int
+    t4 : temp, int
+  Scope: main
+    x : var, int, line 6
+    t5 : temp, int
+    t6 : temp, int
+    t7 : temp, int
+    t8 : temp, int

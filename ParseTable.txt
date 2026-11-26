@@ -1,0 +1,309 @@
+FIRST and FOLLOW sets:
+Program
+  FIRST  = { e TYPE ID { if while return }
+  FOLLOW = { $ }
+Items
+  FIRST  = { e TYPE ID { if while return }
+  FOLLOW = { $ }
+Item
+  FIRST  = { TYPE ID { if while return }
+  FOLLOW = { TYPE ID { if while return $ }
+DeclTail
+  FIRST  = { ( ; , = }
+  FOLLOW = { TYPE ID { if while return $ }
+Params
+  FIRST  = { e TYPE }
+  FOLLOW = { ) }
+ParamsTail
+  FIRST  = { e , }
+  FOLLOW = { ) }
+Param
+  FIRST  = { TYPE }
+  FOLLOW = { ) , }
+Block
+  FIRST  = { { }
+  FOLLOW = { TYPE ID { } if else while return $ }
+Stmts
+  FIRST  = { e TYPE ID { if while return }
+  FOLLOW = { } }
+Stmt
+  FIRST  = { TYPE ID { if while return }
+  FOLLOW = { TYPE ID { } if while return }
+DeclStmt
+  FIRST  = { TYPE }
+  FOLLOW = { TYPE ID { } if while return }
+VarsTail
+  FIRST  = { e , }
+  FOLLOW = { ; }
+Init
+  FIRST  = { e = }
+  FOLLOW = { ; , }
+AssignStmt
+  FIRST  = { ID }
+  FOLLOW = { TYPE ID { } if while return $ }
+AssignTail
+  FIRST  = { ( = }
+  FOLLOW = { ; }
+IF
+  FIRST  = { if }
+  FOLLOW = { TYPE ID { } if while return $ }
+ELSE
+  FIRST  = { e else }
+  FOLLOW = { TYPE ID { } if while return $ }
+ElseTail
+  FIRST  = { { if }
+  FOLLOW = { TYPE ID { } if while return $ }
+WHILE
+  FIRST  = { while }
+  FOLLOW = { TYPE ID { } if while return $ }
+ReturnStmt
+  FIRST  = { return }
+  FOLLOW = { TYPE ID { } if while return $ }
+ReturnTail
+  FIRST  = { ID ( ; - ! NUM CHR }
+  FOLLOW = { TYPE ID { } if while return $ }
+Args
+  FIRST  = { e ID ( - ! NUM CHR }
+  FOLLOW = { ) }
+ArgsTail
+  FIRST  = { e , }
+  FOLLOW = { ) }
+Expr
+  FIRST  = { ID ( - ! NUM CHR }
+  FOLLOW = { ) ; , }
+OrTail
+  FIRST  = { e || }
+  FOLLOW = { ) ; , }
+AndExpr
+  FIRST  = { ID ( - ! NUM CHR }
+  FOLLOW = { ) ; , || }
+AndTail
+  FIRST  = { e && }
+  FOLLOW = { ) ; , || }
+RelExpr
+  FIRST  = { ID ( - ! NUM CHR }
+  FOLLOW = { ) ; , || && }
+RelTail
+  FIRST  = { e == != < > <= >= }
+  FOLLOW = { ) ; , || && }
+RelOp
+  FIRST  = { == != < > <= >= }
+  FOLLOW = { ID ( - ! NUM CHR }
+AddExpr
+  FIRST  = { ID ( - ! NUM CHR }
+  FOLLOW = { ) ; , || && == != < > <= >= }
+AddTail
+  FIRST  = { e + - }
+  FOLLOW = { ) ; , || && == != < > <= >= }
+MulExpr
+  FIRST  = { ID ( - ! NUM CHR }
+  FOLLOW = { ) ; , || && == != < > <= >= + - }
+MulTail
+  FIRST  = { e * / % }
+  FOLLOW = { ) ; , || && == != < > <= >= + - }
+Unary
+  FIRST  = { ID ( - ! NUM CHR }
+  FOLLOW = { ) ; , || && == != < > <= >= + - * / % }
+Primary
+  FIRST  = { ID ( NUM CHR }
+  FOLLOW = { ) ; , || && == != < > <= >= + - * / % }
+IdTail
+  FIRST  = { e ( }
+  FOLLOW = { ) ; , || && == != < > <= >= + - * / % }
+
+Parse table entries:
+M[Program, TYPE] = Program -> Items
+M[Program, ID] = Program -> Items
+M[Program, {] = Program -> Items
+M[Program, if] = Program -> Items
+M[Program, while] = Program -> Items
+M[Program, return] = Program -> Items
+M[Program, $] = Program -> Items
+M[Items, TYPE] = Items -> Item Items
+M[Items, ID] = Items -> Item Items
+M[Items, {] = Items -> Item Items
+M[Items, if] = Items -> Item Items
+M[Items, while] = Items -> Item Items
+M[Items, return] = Items -> Item Items
+M[Items, $] = Items -> e
+M[Item, TYPE] = Item -> TYPE ID DeclTail
+M[Item, ID] = Item -> AssignStmt
+M[Item, {] = Item -> Block
+M[Item, if] = Item -> IF
+M[Item, while] = Item -> WHILE
+M[Item, return] = Item -> ReturnStmt
+M[DeclTail, (] = DeclTail -> ( Params ) Block
+M[DeclTail, ;] = DeclTail -> Init VarsTail ;
+M[DeclTail, ,] = DeclTail -> Init VarsTail ;
+M[DeclTail, =] = DeclTail -> Init VarsTail ;
+M[Params, TYPE] = Params -> Param ParamsTail
+M[Params, )] = Params -> e
+M[ParamsTail, )] = ParamsTail -> e
+M[ParamsTail, ,] = ParamsTail -> , Param ParamsTail
+M[Param, TYPE] = Param -> TYPE ID
+M[Block, {] = Block -> { Stmts }
+M[Stmts, TYPE] = Stmts -> Stmt Stmts
+M[Stmts, ID] = Stmts -> Stmt Stmts
+M[Stmts, {] = Stmts -> Stmt Stmts
+M[Stmts, }] = Stmts -> e
+M[Stmts, if] = Stmts -> Stmt Stmts
+M[Stmts, while] = Stmts -> Stmt Stmts
+M[Stmts, return] = Stmts -> Stmt Stmts
+M[Stmt, TYPE] = Stmt -> DeclStmt
+M[Stmt, ID] = Stmt -> AssignStmt
+M[Stmt, {] = Stmt -> Block
+M[Stmt, if] = Stmt -> IF
+M[Stmt, while] = Stmt -> WHILE
+M[Stmt, return] = Stmt -> ReturnStmt
+M[DeclStmt, TYPE] = DeclStmt -> TYPE ID Init VarsTail ;
+M[VarsTail, ;] = VarsTail -> e
+M[VarsTail, ,] = VarsTail -> , ID Init VarsTail
+M[Init, ;] = Init -> e
+M[Init, ,] = Init -> e
+M[Init, =] = Init -> = Expr
+M[AssignStmt, ID] = AssignStmt -> ID AssignTail ;
+M[AssignTail, (] = AssignTail -> ( Args )
+M[AssignTail, =] = AssignTail -> = Expr
+M[IF, if] = IF -> if ( Expr ) Block ELSE
+M[ELSE, TYPE] = ELSE -> e
+M[ELSE, ID] = ELSE -> e
+M[ELSE, {] = ELSE -> e
+M[ELSE, }] = ELSE -> e
+M[ELSE, if] = ELSE -> e
+M[ELSE, else] = ELSE -> else ElseTail
+M[ELSE, while] = ELSE -> e
+M[ELSE, return] = ELSE -> e
+M[ELSE, $] = ELSE -> e
+M[ElseTail, {] = ElseTail -> Block
+M[ElseTail, if] = ElseTail -> IF
+M[WHILE, while] = WHILE -> while ( Expr ) Block
+M[ReturnStmt, return] = ReturnStmt -> return ReturnTail
+M[ReturnTail, ID] = ReturnTail -> Expr ;
+M[ReturnTail, (] = ReturnTail -> Expr ;
+M[ReturnTail, ;] = ReturnTail -> ;
+M[ReturnTail, -] = ReturnTail -> Expr ;
+M[ReturnTail, !] = ReturnTail -> Expr ;
+M[ReturnTail, NUM] = ReturnTail -> Expr ;
+M[ReturnTail, CHR] = ReturnTail -> Expr ;
+M[Args, ID] = Args -> Expr ArgsTail
+M[Args, (] = Args -> Expr ArgsTail
+M[Args, )] = Args -> e
+M[Args, -] = Args -> Expr ArgsTail
+M[Args, !] = Args -> Expr ArgsTail
+M[Args, NUM] = Args -> Expr ArgsTail
+M[Args, CHR] = Args -> Expr ArgsTail
+M[ArgsTail, )] = ArgsTail -> e
+M[ArgsTail, ,] = ArgsTail -> , Expr ArgsTail
+M[Expr, ID] = Expr -> AndExpr OrTail
+M[Expr, (] = Expr -> AndExpr OrTail
+M[Expr, -] = Expr -> AndExpr OrTail
+M[Expr, !] = Expr -> AndExpr OrTail
+M[Expr, NUM] = Expr -> AndExpr OrTail
+M[Expr, CHR] = Expr -> AndExpr OrTail
+M[OrTail, )] = OrTail -> e
+M[OrTail, ;] = OrTail -> e
+M[OrTail, ,] = OrTail -> e
+M[OrTail, ||] = OrTail -> || AndExpr OrTail
+M[AndExpr, ID] = AndExpr -> RelExpr AndTail
+M[AndExpr, (] = AndExpr -> RelExpr AndTail
+M[AndExpr, -] = AndExpr -> RelExpr AndTail
+M[AndExpr, !] = AndExpr -> RelExpr AndTail
+M[AndExpr, NUM] = AndExpr -> RelExpr AndTail
+M[AndExpr, CHR] = AndExpr -> RelExpr AndTail
+M[AndTail, )] = AndTail -> e
+M[AndTail, ;] = AndTail -> e
+M[AndTail, ,] = AndTail -> e
+M[AndTail, ||] = AndTail -> e
+M[AndTail, &&] = AndTail -> && RelExpr AndTail
+M[RelExpr, ID] = RelExpr -> AddExpr RelTail
+M[RelExpr, (] = RelExpr -> AddExpr RelTail
+M[RelExpr, -] = RelExpr -> AddExpr RelTail
+M[RelExpr, !] = RelExpr -> AddExpr RelTail
+M[RelExpr, NUM] = RelExpr -> AddExpr RelTail
+M[RelExpr, CHR] = RelExpr -> AddExpr RelTail
+M[RelTail, )] = RelTail -> e
+M[RelTail, ;] = RelTail -> e
+M[RelTail, ,] = RelTail -> e
+M[RelTail, ||] = RelTail -> e
+M[RelTail, &&] = RelTail -> e
+M[RelTail, ==] = RelTail -> RelOp AddExpr
+M[RelTail, !=] = RelTail -> RelOp AddExpr
+M[RelTail, <] = RelTail -> RelOp AddExpr
+M[RelTail, >] = RelTail -> RelOp AddExpr
+M[RelTail, <=] = RelTail -> RelOp AddExpr
+M[RelTail, >=] = RelTail -> RelOp AddExpr
+M[RelOp, ==] = RelOp -> ==
+M[RelOp, !=] = RelOp -> !=
+M[RelOp, <] = RelOp -> <
+M[RelOp, >] = RelOp -> >
+M[RelOp, <=] = RelOp -> <=
+M[RelOp, >=] = RelOp -> >=
+M[AddExpr, ID] = AddExpr -> MulExpr AddTail
+M[AddExpr, (] = AddExpr -> MulExpr AddTail
+M[AddExpr, -] = AddExpr -> MulExpr AddTail
+M[AddExpr, !] = AddExpr -> MulExpr AddTail
+M[AddExpr, NUM] = AddExpr -> MulExpr AddTail
+M[AddExpr, CHR] = AddExpr -> MulExpr AddTail
+M[AddTail, )] = AddTail -> e
+M[AddTail, ;] = AddTail -> e
+M[AddTail, ,] = AddTail -> e
+M[AddTail, ||] = AddTail -> e
+M[AddTail, &&] = AddTail -> e
+M[AddTail, ==] = AddTail -> e
+M[AddTail, !=] = AddTail -> e
+M[AddTail, <] = AddTail -> e
+M[AddTail, >] = AddTail -> e
+M[AddTail, <=] = AddTail -> e
+M[AddTail, >=] = AddTail -> e
+M[AddTail, +] = AddTail -> + MulExpr AddTail
+M[AddTail, -] = AddTail -> - MulExpr AddTail
+M[MulExpr, ID] = MulExpr -> Unary MulTail
+M[MulExpr, (] = MulExpr -> Unary MulTail
+M[MulExpr, -] = MulExpr -> Unary MulTail
+M[MulExpr, !] = MulExpr -> Unary MulTail
+M[MulExpr, NUM] = MulExpr -> Unary MulTail
+M[MulExpr, CHR] = MulExpr -> Unary MulTail
+M[MulTail, )] = MulTail -> e
+M[MulTail, ;] = MulTail -> e
+M[MulTail, ,] = MulTail -> e
+M[MulTail, ||] = MulTail -> e
+M[MulTail, &&] = MulTail -> e
+M[MulTail, ==] = MulTail -> e
+M[MulTail, !=] = MulTail -> e
+M[MulTail, <] = MulTail -> e
+M[MulTail, >] = MulTail -> e
+M[MulTail, <=] = MulTail -> e
+M[MulTail, >=] = MulTail -> e
+M[MulTail, +] = MulTail -> e
+M[MulTail, -] = MulTail -> e
+M[MulTail, *] = MulTail -> * Unary MulTail
+M[MulTail, /] = MulTail -> / Unary MulTail
+M[MulTail, %] = MulTail -> % Unary MulTail
+M[Unary, ID] = Unary -> Primary
+M[Unary, (] = Unary -> Primary
+M[Unary, -] = Unary -> - Unary
+M[Unary, !] = Unary -> ! Unary
+M[Unary, NUM] = Unary -> Primary
+M[Unary, CHR] = Unary -> Primary
+M[Primary, ID] = Primary -> ID IdTail
+M[Primary, (] = Primary -> ( Expr )
+M[Primary, NUM] = Primary -> NUM
+M[Primary, CHR] = Primary -> CHR
+M[IdTail, (] = IdTail -> ( Args )
+M[IdTail, )] = IdTail -> e
+M[IdTail, ;] = IdTail -> e
+M[IdTail, ,] = IdTail -> e
+M[IdTail, ||] = IdTail -> e
+M[IdTail, &&] = IdTail -> e
+M[IdTail, ==] = IdTail -> e
+M[IdTail, !=] = IdTail -> e
+M[IdTail, <] = IdTail -> e
+M[IdTail, >] = IdTail -> e
+M[IdTail, <=] = IdTail -> e
+M[IdTail, >=] = IdTail -> e
+M[IdTail, +] = IdTail -> e
+M[IdTail, -] = IdTail -> e
+M[IdTail, *] = IdTail -> e
+M[IdTail, /] = IdTail -> e
+M[IdTail, %] = IdTail -> e
+

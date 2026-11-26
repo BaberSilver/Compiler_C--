@@ -1,0 +1,22 @@
+
+Global activation record:
+  (no global variables)
+
+Activation record of pick (last of 2 call(s)):
+  int a = 3
+  int b = 3
+  int c = 2
+  int t1 = 300
+  int t2 = 30
+  int t3 = 330
+  int t4 = 332
+  return value = 332
+
+Activation record of main (last of 1 call(s)):
+  int x = 3
+  int t5 = 2
+  int t6 = 3
+  int t7 = 2
+  int t8 = 332
+  return value = 332
+main returned 332

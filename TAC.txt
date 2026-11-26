@@ -1,0 +1,21 @@
+pick:
+  t1 = a * 100
+  t2 = b * 10
+  t3 = t1 + t2
+  t4 = t3 + c
+  return t4
+endfunc
+main:
+  x = 3
+  param 0
+  param 0
+  param 2
+  t5 = call pick, 3
+  t6 = t5 + 1
+  t7 = x - 1
+  param x
+  param t6
+  param t7
+  t8 = call pick, 3
+  return t8
+endfunc
